@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.DS_Store
+.env
+.env.*
+*.log
+# per-folder Claude Code spend ledger (private)
+.claude-costs
