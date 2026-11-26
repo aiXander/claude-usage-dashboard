@@ -3,7 +3,7 @@
 PORT ?= 5178
 
 .DEFAULT_GOAL := help
-.PHONY: help start dev build stop check install archive install-archive-agent
+.PHONY: help start dev build stop check install archive install-archive-agent install-statusline
 
 help: ## List targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  \033[36m%-9s\033[0m %s\n", $$1, $$2}'
@@ -33,6 +33,9 @@ archive: ## Digest new transcripts into the archive before Claude Code deletes t
 
 install-archive-agent: ## Run `make archive` daily via a macOS LaunchAgent (re-run after a Node upgrade)
 	@./scripts/install-archive-agent.sh
+
+install-statusline: ## Install the Claude Code statusline that writes the .claude-costs ledgers
+	@./scripts/install-statusline.sh
 
 stop: ## Kill a server left running in the background
 	@pkill -f 'node server/index.mjs' && echo "stopped" || echo "nothing running"

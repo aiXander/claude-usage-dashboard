@@ -7,25 +7,59 @@ Point it at a project folder. It reads Claude Code's own records — nothing is
 sent anywhere — and gives you spend over time, model mix, cache efficiency, a
 session leaderboard, and a punchcard of when you actually work.
 
-```bash
-make start           # installs, builds, serves on :5178, opens a browser
-```
+## Getting started
 
-Or for UI work, with hot reload:
+**Needs:** Node 20+, plus `jq` and `git` for the statusline. macOS is the
+tested platform (the daily archive job is a macOS LaunchAgent).
 
-```bash
-make dev             # API on :5178, UI on :5179 (proxied)
-```
+1. **Install the statusline** (once per machine, recommended):
 
-`make archive` digests new transcripts without opening the UI. Claude Code
-deletes transcripts after ~30 days; the dashboard keeps a compact digest of
-every transcript it has seen (~1% of the size), and that archive is what keeps
-older months' per-model detail. `make install-archive-agent` schedules it daily
-as a macOS LaunchAgent; a gap in the archive (no scan within 30 days) is
-permanent.
+   ```bash
+   make install-statusline
+   ```
 
-`make` is a thin wrapper — `npm install && npm run build && npm start` is the
-same thing. `make stop` kills a server left running in the background.
+   Claude Code itself never writes a running cost total to disk. This
+   statusline does: on every render it records the session's cost in a
+   `.claude-costs` file at the git root (or the cwd outside a repo). That
+   ledger is the only source for all-time totals and for the per-project
+   filter. It copies `scripts/statusline.sh` to `~/.claude/statusline.sh` and
+   sets `statusLine` in `~/.claude/settings.json`. If you already have a
+   statusline, it stops without changing anything; merge the `# cost` section
+   of `scripts/statusline.sh` into yours instead.
+
+   Ledgers only start from install, so sessions before it have no ledger
+   entry and show only what their transcripts hold. The file lands in every repo you use Claude
+   Code in, so add it to your global gitignore:
+
+   ```bash
+   mkdir -p ~/.config/git && echo .claude-costs >> ~/.config/git/ignore
+   ```
+
+2. **Run the dashboard:**
+
+   ```bash
+   make start           # installs, builds, serves on :5178, opens a browser
+   ```
+
+   Pick a folder (a repo, or your home folder for everything). Without the
+   statusline you still get the last ~30 days of transcripts: tokens, models,
+   sessions, punchcard, just no all-time dollar total and no project split.
+
+3. **Keep history past 30 days** (optional, macOS):
+
+   ```bash
+   make install-archive-agent
+   ```
+
+   Claude Code deletes transcripts after ~30 days. The dashboard keeps a
+   compact digest of every transcript it has seen (~1% of the size), and that
+   archive is what keeps older months' per-model detail. This schedules
+   `make archive` daily as a LaunchAgent. A gap in the archive (no scan within
+   30 days) is permanent. Re-run it after switching Node versions.
+
+For UI work, with hot reload: `make dev` (API on :5178, UI on :5179, proxied).
+`make` is a thin wrapper, so `npm install && npm run build && npm start` is
+the same thing. `make stop` kills a server left running in the background.
 
 The server binds `127.0.0.1` only. It reads your filesystem, so it must not be
 exposed to a network.
@@ -46,9 +80,9 @@ everything but only recently; the prompt history is the only thing spanning
 both. Anything that needs all three at once — the all-time daily cost curve —
 is computed as an estimate and **labelled as one** in the UI.
 
-`.claude-costs` is written by the statusline hook in `~/.claude/statusline.sh`.
-Without it you still get everything the transcripts hold, just no all-time
-total.
+`.claude-costs` is written by the statusline (`make install-statusline`,
+above). Without it you still get everything the transcripts hold, just no
+all-time total.
 
 ## Two cost numbers, deliberately
 
@@ -83,12 +117,18 @@ server/
   parse.mjs       One transcript -> a compact digest (dedupes replayed rows)
   aggregate.mjs   Digests + ledger + history -> the report the UI renders
   pricing.mjs     Per-model list prices and cache multipliers
-  cache.mjs       Per-file digest cache keyed on (mtime, size)
+  cache.mjs       Per-file digest cache keyed on (mtime, size); also the archive
+  archive.mjs     Digest-only pass behind `make archive`
+scripts/
+  statusline.sh               The statusline that writes .claude-costs
+  install-statusline.sh       Installs it into ~/.claude
+  install-archive-agent.sh    Daily LaunchAgent for archive.mjs
 src/              React + Recharts UI
 ```
 
 Digests are cached under `~/.cache/claude-usage-dashboard`, so a re-scan of a
-400 MB project is near-instant. `DELETE /api/cache` clears it; the `VERSION`
+400 MB project is near-instant. `DELETE /api/cache` clears digests of transcripts that still exist (archived
+ones are kept); the `VERSION`
 constant in `cache.mjs` invalidates it after a parser change.
 
 ## Adding a model

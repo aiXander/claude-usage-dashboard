@@ -12,6 +12,7 @@ make stop        # kill a server left running
 make dev         # API :5178 + Vite :5179 (proxied), hot reload
 make check       # npx tsc --noEmit (there is no test suite yet)
 make archive     # digest new transcripts into the archive (no UI)
+make install-statusline     # copy scripts/statusline.sh to ~/.claude and set statusLine (refuses to clobber an existing one)
 make install-archive-agent  # daily LaunchAgent com.xander.claude-usage-archive running archive.mjs;
                  # pins nvm's node path, so re-run after a Node upgrade. Log: ~/Library/Logs/claude-usage-archive.log
 ```
@@ -30,6 +31,7 @@ server/aggregate.mjs   digests + ledger + history -> the report object
 server/pricing.mjs     model list prices, cache multipliers, non-billable models
 server/cache.mjs       digest cache under ~/.cache/claude-usage-dashboard — also the archive
 server/archive.mjs     digest-only pass, so transcripts are archived before Claude Code deletes them
+scripts/statusline.sh  the statusline that writes .claude-costs; a copy of ~/.claude/statusline.sh, keep them in sync
 src/App.tsx            all five tab panels
 src/components/        charts.tsx, heatmaps.tsx, tables.tsx, primitives.tsx, FolderPicker.tsx, ProjectFilter.tsx
 src/lib/               api.ts, palette.ts, format.ts, types.ts, series.ts
